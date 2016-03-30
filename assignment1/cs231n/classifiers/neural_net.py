@@ -74,17 +74,19 @@ class TwoLayerNet(object):
     # Store the result in the scores variable, which should be an array of      #
     # shape (N, C).                                                             #
     #############################################################################
-    pass
+    # scores = (X.dot(W1)+b1).dot(W2)+b2
+    nc = np.maximum(0,(X.dot(W1)+b1)).dot(W2)+b2
+
     #############################################################################
     #                              END OF YOUR CODE                             #
     #############################################################################
     
     # If the targets are not given then jump out, we're done
     if y is None:
-      return scores
+      return nc
 
     # Compute the loss
-    loss = None
+
     #############################################################################
     # TODO: Finish the forward pass, and compute the loss. This should include  #
     # both the data loss and L2 regularization for W1 and W2. Store the result  #
@@ -92,7 +94,14 @@ class TwoLayerNet(object):
     # classifier loss. So that your results match ours, multiply the            #
     # regularization loss by 0.5                                                #
     #############################################################################
-    pass
+    # code copied from softmax.py
+    num_train,dim=X.shape
+    expnc = np.exp(nc)
+    sum_nc = np.sum(expnc, axis=1)
+    nc_correct = expnc[np.arange(num_train), y]
+    loss = 0.0
+    loss -= np.sum(np.log(nc_correct/sum_nc)) / num_train
+    loss += 0.5*reg*np.sum(np.sum(W1*W1)) + 0.5*reg*np.sum(np.sum(W2*W2))
     #############################################################################
     #                              END OF YOUR CODE                             #
     #############################################################################
