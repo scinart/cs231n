@@ -1,3 +1,4 @@
+#-*-coding:utf-8 -*-
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -75,12 +76,14 @@ class TwoLayerNet(object):
     # shape (N, C).                                                             #
     #############################################################################
     # scores = (X.dot(W1)+b1).dot(W2)+b2
-    nc = np.maximum(0,(X.dot(W1)+b1)).dot(W2)+b2
+    nh = X.dot(W1)+b1
+    relu_nh = np.maximum(0,nh)
+    nc = relu_nh.dot(W2)+b2
 
     #############################################################################
     #                              END OF YOUR CODE                             #
     #############################################################################
-    
+
     # If the targets are not given then jump out, we're done
     if y is None:
       return nc
@@ -113,7 +116,44 @@ class TwoLayerNet(object):
     # and biases. Store the results in the grads dictionary. For example,       #
     # grads['W1'] should store the gradient on W1, and be a matrix of same size #
     #############################################################################
-    pass
+    """
+    for one single input x_i^T
+
+    let:
+        xa = (x_i^T .dot (W1)) ^T
+        xb = xa + b1
+        xc = relu(xb)
+        xd = xc^T.dot(W2)^T
+        xe = xd + b2
+        xf = exp(xe)
+
+     ∂L/∂xf = 1/sum(xf)
+     ∂L/∂xf -= 1/xf.*y
+
+    """
+    yy = np.zeros_like(expnc)
+    for ix,iy in enumerate(y):
+      yy[ix,iy]=1
+
+    # d_b2 =  (1.0/num_train)*sum((-1/expnc)*(yy))
+    # d_b2 += (1.0/num_train)*sum(1/sum_nc)
+    # d_b2 = sum(sum_nc)
+    d_b2 = expnc/(sum_nc[:,None])
+    d_b2 -= yy
+    grads['b2'] = sum(d_b2)/num_train
+
+    d_W2 = (relu_nh.T).dot(d_b2) / num_train
+    d_W2 += reg*W2
+    grads['W2'] = d_W2
+
+    d_relu_nh = d_b2.dot(W2.T)
+    d_nh = np.maximum(0,np.sign(nh))*d_relu_nh
+    grads['b1'] = sum(d_nh)/num_train
+
+    d_W1 = (X.T).dot(d_nh) / num_train
+    d_W1 += reg*W1
+    grads['W1'] = d_W1
+
     #############################################################################
     #                              END OF YOUR CODE                             #
     #############################################################################
