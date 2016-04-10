@@ -108,6 +108,22 @@ def relu_backward(dout, cache):
   #############################################################################
   return dx
 
+# def softmax_forward(x)
+#   probs = np.exp(x - np.max(x, axis=1, keepdims=True))
+#   probs /= np.sum(probs, axis=1, keepdims=True)
+#   out = probs
+#   cache = x
+#   return out, cache
+
+# def softmax_backward(dout,cache)
+#   probs = np.exp(x - np.max(x, axis=1, keepdims=True))
+#   probs /= np.sum(probs, axis=1, keepdims=True)
+#   N = x.shape[0]
+#   loss = -np.sum(np.log(probs[np.arange(N), y])) / N
+#   dx = probs.copy()
+#   dx[np.arange(N), y] -= 1
+#   dx /= N
+#   return loss, dx
 
 def batchnorm_forward(x, gamma, beta, bn_param):
   """
