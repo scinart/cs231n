@@ -31,7 +31,7 @@ class Solver(object):
     'X_train': # training data
     'y_train': # training labels
     'X_val': # validation data
-    'X_train': # validation labels
+    'y_val': # validation labels
   }
   model = MyAwesomeModel(hidden_size=100, reg=10)
   solver = Solver(model, data,
@@ -165,6 +165,9 @@ class Solver(object):
     loss, grads = self.model.loss(X_batch, y_batch)
     self.loss_history.append(loss)
 
+    # for k,v in self.optim_configs.iteritems():
+    #   print k,v
+
     # Perform a parameter update
     for p, w in self.model.params.iteritems():
       dw = grads[p]
@@ -173,6 +176,7 @@ class Solver(object):
       self.model.params[p] = next_w
       self.optim_configs[p] = next_config
 
+    # print self.loss_history[-1]
 
   def check_accuracy(self, X, y, num_samples=None, batch_size=100):
     """
@@ -236,6 +240,8 @@ class Solver(object):
       epoch_end = (t + 1) % iterations_per_epoch == 0
       if epoch_end:
         self.epoch += 1
+        # by scinart.
+        # is learning_rate shared among params? why iterating.
         for k in self.optim_configs:
           self.optim_configs[k]['learning_rate'] *= self.lr_decay
 
