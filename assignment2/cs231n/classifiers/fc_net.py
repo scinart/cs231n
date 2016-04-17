@@ -3,6 +3,7 @@ import numpy as np
 from cs231n.layers import *
 from cs231n.layer_utils import *
 
+import copy
 
 class TwoLayerNet(object):
   """
@@ -171,6 +172,9 @@ class FullyConnectedNet(object):
     self.dtype = dtype
     self.params = {}
 
+    all_dims = copy.deepcopy(hidden_dims);
+    all_dims.insert(0,input_dim); # prepend input dim
+    all_dims.append(num_classes); # append output dim
     ############################################################################
     # TODO: Initialize the parameters of the network, storing all values in    #
     # the self.params dictionary. Store weights and biases for the first layer #
@@ -183,7 +187,10 @@ class FullyConnectedNet(object):
     # beta2, etc. Scale parameters should be initialized to one and shift      #
     # parameters should be initialized to zero.                                #
     ############################################################################
-    pass
+
+    for i in range(1,self.num_layers+1):
+      self.params["W"+str(i)] = weight_scale * np.random.randn(all_dims[i-1], all_dims[i])
+      self.params["b"+str(i)] = np.zeros(all_dims[i])
     ############################################################################
     #                             END OF YOUR CODE                             #
     ############################################################################
@@ -241,7 +248,16 @@ class FullyConnectedNet(object):
     # self.bn_params[1] to the forward pass for the second batch normalization #
     # layer, etc.                                                              #
     ############################################################################
-    pass
+    num_layers = self.num_layers
+    mid_res = {} # store intermediate result.
+    
+    mid_res["L0"] = X
+    for i in range(1,num_layers+1):
+      Li_1, Wi, bi = mid_res["L"+str(i-1)], self.params["W"+str(i)], self.params["b"+str(i)]
+      mid_res["Lp"+str(i)],mid_res["cachep"+str(i)] = affine_forward(Li_1,Wi,bi)
+      mid_res["L"+str(i)],mid_res["cache"+str(i)] = relu_forward(mid_res["Lp"+str(i)])
+
+    scores = mid_res["Lp"+str(num_layers)];
     ############################################################################
     #                             END OF YOUR CODE                             #
     ############################################################################
@@ -250,7 +266,7 @@ class FullyConnectedNet(object):
     if mode == 'test':
       return scores
 
-    loss, grads = 0.0, {}
+    loss, grads, douts = 0.0, {}, {}
     ############################################################################
     # TODO: Implement the backward pass for the fully-connected net. Store the #
     # loss in the loss variable and gradients in the grads dictionary. Compute #
@@ -264,7 +280,23 @@ class FullyConnectedNet(object):
     # automated tests, make sure that your L2 regularization includes a factor #
     # of 0.5 to simplify the expression for the gradient.                      #
     ############################################################################
-    pass
+    loss , douts["dout"+str(num_layers)] = softmax_loss(scores, y)
+    douts["dout"+str(num_layers-1)], grads["W"+str(num_layers)], grads["b"+str(num_layers)] = affine_backward(douts["dout"+str(num_layers)], mid_res["cachep"+str(num_layers)])
+    for i in range(num_layers-1,0,-1):
+
+      # dp = relu_backward(grads["d"+str(i)], mid_res["cache"+str(i)])
+      dp = douts["dout"+str(i)]
+      dout = relu_backward(dp, mid_res["cache"+str(i)])
+      douts["dout"+str(i-1)], grads["W"+str(i)], grads["b"+str(i)] = affine_backward(dout, mid_res["cachep"+str(i)])
+      grads["W"+str(i)] += self.reg * self.params["W"+str(i)]
+      loss += 0.5*self.reg*np.sum((self.params["W"+str(i)])*(self.params["W"+str(i)]))
+      
+      
+      # Li_1, Wi, bi = mid_res["L"+str(i-1)], self.params["W"+str(i)], self.params["b"+str(i)]
+      # mid_res["Lp"+str(i)],mid_res["cachep"+str(i)] = affine_forward(Li_1,Wi,bi)
+      # mid_res["L"+str(i)],mid_res["cache"+str(i)] = relu_forward(mid_res["Lp"+str(i)])
+
+
     ############################################################################
     #                             END OF YOUR CODE                             #
     ############################################################################
