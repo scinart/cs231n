@@ -252,12 +252,24 @@ class FullyConnectedNet(object):
     mid_res = {} # store intermediate result.
     
     mid_res["L0"] = X
-    for i in range(1,num_layers+1):
-      Li_1, Wi, bi = mid_res["L"+str(i-1)], self.params["W"+str(i)], self.params["b"+str(i)]
-      mid_res["Lp"+str(i)],mid_res["cachep"+str(i)] = affine_forward(Li_1,Wi,bi)
-      mid_res["L"+str(i)],mid_res["cache"+str(i)] = relu_forward(mid_res["Lp"+str(i)])
 
-    scores = mid_res["Lp"+str(num_layers)];
+    for i in range(1,num_layers+1):
+
+      il=0
+      mid_res["L"+str(il)+"_"+str(i)], Wi, bi = mid_res["L"+str(i-1)], self.params["W"+str(i)], self.params["b"+str(i)]
+      il+=1
+      mid_res["L"+str(il)+"_"+str(i)],mid_res["cache"+str(il)+"_"+str(i)] = affine_forward(mid_res["L"+str(il-1)+"_"+str(i)],Wi,bi)
+      il+=1
+      mid_res["L"+str(il)+"_"+str(i)],mid_res["cache"+str(il)+"_"+str(i)] = relu_forward(mid_res["L"+str(il-1)+"_"+str(i)])
+      il+=1
+      # if self.use_batchnorm:
+      #   mid_res["L"+str(il)+"_"+str(i)],mid_res["cache"+str(il)+"_"+str(i)] = \
+      #     batchnorm_forward(mid_res["L"+str(il-1)+"_"+str(i)]_L,Wi,bi)
+      il-=1
+      mid_res["L"+str(i)] = mid_res["L"+str(il)+"_"+str(i)]
+    # last layer only affine_forward is used.
+    # so we fetch first small layer of last layer.
+    scores = mid_res["L"+str(1)+"_"+str(num_layers)];
     ############################################################################
     #                             END OF YOUR CODE                             #
     ############################################################################
@@ -281,13 +293,15 @@ class FullyConnectedNet(object):
     # of 0.5 to simplify the expression for the gradient.                      #
     ############################################################################
     loss , douts["dout"+str(num_layers)] = softmax_loss(scores, y)
-    douts["dout"+str(num_layers-1)], grads["W"+str(num_layers)], grads["b"+str(num_layers)] = affine_backward(douts["dout"+str(num_layers)], mid_res["cachep"+str(num_layers)])
+    douts["dout"+str(num_layers-1)], grads["W"+str(num_layers)], grads["b"+str(num_layers)] = affine_backward(douts["dout"+str(num_layers)], mid_res["cache"+str(1)+"_"+str(num_layers)])
     for i in range(num_layers-1,0,-1):
 
       # dp = relu_backward(grads["d"+str(i)], mid_res["cache"+str(i)])
       dp = douts["dout"+str(i)]
-      dout = relu_backward(dp, mid_res["cache"+str(i)])
-      douts["dout"+str(i-1)], grads["W"+str(i)], grads["b"+str(i)] = affine_backward(dout, mid_res["cachep"+str(i)])
+      il=2
+      dout = relu_backward(dp, mid_res["cache"+str(il)+"_"+str(i)])
+      il-=1
+      douts["dout"+str(i-1)], grads["W"+str(i)], grads["b"+str(i)] = affine_backward(dout, mid_res["cache"+str(il)+"_"+str(i)])
       grads["W"+str(i)] += self.reg * self.params["W"+str(i)]
       loss += 0.5*self.reg*np.sum((self.params["W"+str(i)])*(self.params["W"+str(i)]))
       
