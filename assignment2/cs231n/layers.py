@@ -191,10 +191,10 @@ def batchnorm_forward(x, gamma, beta, bn_param):
     running_mean = running_mean*momentum + (1-momentum)*x_mean
     running_var = running_var*momentum + (1-momentum)*(x_var)
 
-    x_normed = (x - running_mean)/np.sqrt(running_var)
+    x_normed = (x - x_mean)/np.sqrt(x_var)
     out = x_normed*gamma + beta
 
-    cache = (x_normed, gamma, x_var)
+    cache = (x_normed, gamma, x_var, x_mean,x)
     #############################################################################
     #                             END OF YOUR CODE                              #
     #############################################################################
@@ -242,14 +242,14 @@ def batchnorm_backward(dout, cache):
   # TODO: Implement the backward pass for batch normalization. Store the      #
   # results in the dx, dgamma, and dbeta variables.                           #
   #############################################################################
-  x_normed,gamma, x_var = cache
+  # x_normed,gamma, x_var = cache
+  x_normed,gamma, x_var, x_mean,x = cache
   N,D=dout.shape
-  dx = gamma*dout/np.sqrt(x_var)
-  tmp = gamma*np.sum(dout,0)
-  tmp2 = gamma * np.sum(dout*(x_normed*np.sqrt(x_var)))
-
-  dx += (-1)/N/np.sqrt(x_var)*tmp
-  dx += (-1)/N/x_var*x_normed*tmp2
+  dx = np.zeros_like(dout)
+  dx += gamma*dout/np.sqrt(x_var)
+  dx += (-1.0)/N/np.sqrt(x_var)*x_normed*np.sum(dout*gamma*x_normed,0)
+  dx += (-1.0)/N/np.sqrt(x_var)*np.sum(dout*gamma,0)
+  
   dgamma = np.sum(dout*x_normed,0)
   dbeta = np.sum(dout,0)
   
