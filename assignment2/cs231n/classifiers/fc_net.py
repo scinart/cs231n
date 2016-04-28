@@ -272,6 +272,9 @@ class FullyConnectedNet(object):
       if i!=num_layers:
         mid_res["L"+str(il)+"_"+str(i)],mid_res["cache"+str(il)+"_"+str(i)] = relu_forward(mid_res["L"+str(il-1)+"_"+str(i)])
         il+=1
+      if self.use_dropout and i!=num_layers:
+        mid_res["L"+str(il)+"_"+str(i)],mid_res["cache"+str(il)+"_"+str(i)] = dropout_forward(mid_res["L"+str(il-1)+"_"+str(i)],self.dropout_param)
+        il+=1
 
       il-=1
       mid_res["L"+str(i)] = mid_res["L"+str(il)+"_"+str(i)]
@@ -313,12 +316,20 @@ class FullyConnectedNet(object):
       if self.use_dropout:
         il+=1
 
+      if self.use_dropout:
+        dout=dropout_backward(dout,mid_res["cache"+str(il)+"_"+str(i)])
+        il-=1
+
       dout = relu_backward(dout, mid_res["cache"+str(il)+"_"+str(i)])
       il-=1
+
       if self.use_batchnorm:
         dout,dgamma,dbeta=batchnorm_backward(dout,mid_res["cache"+str(il)+"_"+str(i)])
         il-=1
+
       douts["dout"+str(i-1)], grads["W"+str(i)], grads["b"+str(i)] = affine_backward(dout, mid_res["cache"+str(il)+"_"+str(i)])
+      il-=1
+
       grads["W"+str(i)] += self.reg * self.params["W"+str(i)]
       if self.use_batchnorm:
         grads["gamma"+str(i)] = dgamma
