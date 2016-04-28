@@ -266,12 +266,13 @@ class FullyConnectedNet(object):
       mid_res["L"+str(il)+"_"+str(i)],mid_res["cache"+str(il)+"_"+str(i)] = affine_forward(mid_res["L"+str(il-1)+"_"+str(i)],Wi,bi)
       il+=1
 
-      if i!=num_layers:
-        mid_res["L"+str(il)+"_"+str(i)],mid_res["cache"+str(il)+"_"+str(i)] = relu_forward(mid_res["L"+str(il-1)+"_"+str(i)])
-        il+=1
       if self.use_batchnorm and i!=num_layers:
         mid_res["L"+str(il)+"_"+str(i)],mid_res["cache"+str(il)+"_"+str(i)] = batchnorm_forward(mid_res["L"+str(il-1)+"_"+str(i)],self.params["gamma"+str(i)],self.params["beta"+str(i)],self.bn_params[i-1])
         il+=1
+      if i!=num_layers:
+        mid_res["L"+str(il)+"_"+str(i)],mid_res["cache"+str(il)+"_"+str(i)] = relu_forward(mid_res["L"+str(il-1)+"_"+str(i)])
+        il+=1
+
       il-=1
       mid_res["L"+str(i)] = mid_res["L"+str(il)+"_"+str(i)]
     # last layer only affine_forward is used.
@@ -305,13 +306,18 @@ class FullyConnectedNet(object):
 
       # dp = relu_backward(grads["d"+str(i)], mid_res["cache"+str(i)])
       dout = douts["dout"+str(i)]
-      if self.use_batchnorm:
-        il=3
-        dout,dgamma,dbeta=batchnorm_backward(dout,mid_res["cache"+str(il)+"_"+str(i)])
 
       il=2
+      if self.use_batchnorm:
+        il+=1
+      if self.use_dropout:
+        il+=1
+
       dout = relu_backward(dout, mid_res["cache"+str(il)+"_"+str(i)])
       il-=1
+      if self.use_batchnorm:
+        dout,dgamma,dbeta=batchnorm_backward(dout,mid_res["cache"+str(il)+"_"+str(i)])
+        il-=1
       douts["dout"+str(i-1)], grads["W"+str(i)], grads["b"+str(i)] = affine_backward(dout, mid_res["cache"+str(il)+"_"+str(i)])
       grads["W"+str(i)] += self.reg * self.params["W"+str(i)]
       if self.use_batchnorm:

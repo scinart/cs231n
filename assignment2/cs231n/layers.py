@@ -321,7 +321,9 @@ def dropout_forward(x, dropout_param):
     # TODO: Implement the training phase forward pass for inverted dropout.   #
     # Store the dropout mask in the mask variable.                            #
     ###########################################################################
-    pass
+    p_pass = 1-p
+    mask=np.random.random_sample(x.shape)<p_pass
+    out=x*mask/p_pass
     ###########################################################################
     #                            END OF YOUR CODE                             #
     ###########################################################################
@@ -329,7 +331,7 @@ def dropout_forward(x, dropout_param):
     ###########################################################################
     # TODO: Implement the test phase forward pass for inverted dropout.       #
     ###########################################################################
-    pass
+    out=x
     ###########################################################################
     #                            END OF YOUR CODE                             #
     ###########################################################################
@@ -356,7 +358,10 @@ def dropout_backward(dout, cache):
     ###########################################################################
     # TODO: Implement the training phase backward pass for inverted dropout.  #
     ###########################################################################
-    pass
+    p=dropout_param['p']
+    p_pass=1-p
+    dx=dout*mask
+    dx/=p_pass
     ###########################################################################
     #                            END OF YOUR CODE                             #
     ###########################################################################
