@@ -485,7 +485,22 @@ def max_pool_forward_naive(x, pool_param):
   #############################################################################
   # TODO: Implement the max pooling forward pass                              #
   #############################################################################
-  pass
+  pool_height=pool_param['pool_height']
+  pool_width=pool_param['pool_width']
+  stride=pool_param['stride']
+
+  N, C, H, W = x.shape
+
+  HH=H/pool_height
+  WW=W/pool_height
+
+  out = np.zeros([N,C,HH,WW])
+
+  for n in range(0,N):
+    for c in range(0,C):
+      for hh in range(0,HH):
+        for ww in range(0,WW):
+          out[n,c,hh,ww]=np.max(x[n,c,hh*pool_height:(hh+1)*pool_height,ww*pool_width:(ww+1)*pool_width])
   #############################################################################
   #                             END OF YOUR CODE                              #
   #############################################################################
@@ -508,7 +523,34 @@ def max_pool_backward_naive(dout, cache):
   #############################################################################
   # TODO: Implement the max pooling backward pass                             #
   #############################################################################
-  pass
+  x, pool_param = cache
+  pool_height=pool_param['pool_height']
+  pool_width=pool_param['pool_width']
+  stride=pool_param['stride']
+
+  N, C, H, W = x.shape
+
+  HH=H/pool_height
+  WW=W/pool_height
+  dx = np.zeros_like(x)
+  for n in range(0,N):
+    for c in range(0,C):
+      for hh in range(0,HH):
+        for ww in range(0,WW):
+          # out[n,c,hh,ww]=np.max(x[n,c,hh*pool_height:(hh+1)*pool_height,ww*pool_width:(ww+1)*pool_width])
+          the_max = np.max(x[n,c,hh*pool_height:(hh+1)*pool_height,ww*pool_width:(ww+1)*pool_width])
+          xxh=0
+          xxw=0
+          while xxh < pool_height:
+            xxw = 0
+            while xxw < pool_width:
+              if x[n,c,hh*pool_height+xxh,ww*pool_width+xxw]==the_max:
+                dx[n,c,hh*pool_height+xxh,ww*pool_width+xxw] = dout[n,c,hh,ww]
+                xxh=pool_height
+                xxw=pool_width
+              xxw+=1
+            xxh+=1
+
   #############################################################################
   #                             END OF YOUR CODE                              #
   #############################################################################
