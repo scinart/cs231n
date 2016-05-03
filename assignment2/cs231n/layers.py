@@ -398,7 +398,25 @@ def conv_forward_naive(x, w, b, conv_param):
   # TODO: Implement the convolutional forward pass.                           #
   # Hint: you can use the function np.pad for padding.                        #
   #############################################################################
-  pass
+  N,C,H,W=x.shape
+  F,C,HH,WW=w.shape
+  stride=conv_param['stride']
+  pad=conv_param['pad']
+  padded_x = np.pad(x,[[0,0],[0,0],[pad,pad],[pad,pad]],'constant')
+  Hprime = 1 + (H + 2 * pad - HH) / stride
+  Wprime = 1 + (W + 2 * pad - WW) / stride
+
+  out = np.zeros([N,F,Hprime,Wprime])
+
+  for n in range(0,N):
+    for f in range(0,F):
+      for hp in range(0,Hprime):
+        for wp in range(0,Wprime):
+          hps=hp*stride
+          hps1=(hp+1)*stride
+          wps=wp*stride
+          wps1=(wp+1)*stride
+          out[n,f,hp,wp]=np.sum(w[f,:,:,:]*padded_x[n,:,hp*stride:(hp*stride+HH),wp*stride:(wp*stride+WW)])+b[f]
   #############################################################################
   #                             END OF YOUR CODE                              #
   #############################################################################
@@ -423,7 +441,7 @@ def conv_backward_naive(dout, cache):
   #############################################################################
   # TODO: Implement the convolutional backward pass.                          #
   #############################################################################
-  pass
+  x, w, b, conv_param = cache
   #############################################################################
   #                             END OF YOUR CODE                              #
   #############################################################################
