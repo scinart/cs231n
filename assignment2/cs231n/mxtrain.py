@@ -77,5 +77,6 @@ def get_iterator(args, kv):
 
 # train
 def please_train(args, net):
+  parser = get_parser()
   args = parser.parse_args(args)
   train_model.fit(args, net, get_iterator)

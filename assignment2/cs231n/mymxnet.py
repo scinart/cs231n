@@ -13,7 +13,7 @@ def get_cifar_default(num_classes = 10, force_mirroring=False):
     flatten = mx.symbol.Flatten(data=conv, name="flatten1", attr=attr)
     fc1 = mx.symbol.FullyConnected(data=flatten, num_hidden=100, name="fc1")
     fc2 = mx.symbol.FullyConnected(data=flatten, num_hidden=num_classes, name="fc2")
-    softmax = mx.symbol.SoftmaxOutput(data=fc, name="softmax")
+    softmax = mx.symbol.SoftmaxOutput(data=fc2, name="softmax")
     return softmax
 
 
