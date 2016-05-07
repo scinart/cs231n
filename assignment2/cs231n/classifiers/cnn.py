@@ -151,6 +151,36 @@ class MyConvNet(object):
     self.reg = reg
     self.dtype = dtype
 
+    net1 = [ {'type': 'cv', 'F': 32, 'size':7, 'stride': 1, 'pad': 3},
+             {'type': 'pl', 'h':2, 'w':2, 'stride':2},
+             {'type': 'af', 'D': 100},
+             {'type': 'sm', 'num_class':10} ]
+
+    # 10 / 250 , lr 1e-4, decay 0.95
+    # (Iteration 1960 / 1960) loss: 0.797972
+    # (Epoch 10 / 10) train acc: 0.700000; val_acc: 0.653000
+
+    net2 = [ {'type': 'cv', 'F': 32, 'size':7, 'stride': 1, 'pad': 3},
+             {'type': 'pl', 'h':2, 'w':2, 'stride':2},
+             {'type': 'sbn'},
+             {'type': 'cv', 'F': 64, 'size':5, 'stride': 1, 'pad': 2},
+             {'type': 'pl', 'h':2, 'w':2, 'stride':2},
+             {'type': 'sbn'},
+             {'type': 'af', 'D': 100},
+             {'type': 'sm', 'num_class':10} ]
+
+    meta_params = net1
+
+    # meta_params = [ {'type': 'cp', 'F': 32, 'size':5, 'stride': 1, 'pad': 2, 'h': 2, 'w': 2, 'pool_stride': 2},
+    #                 {'type': 'sbn'},
+    #                 {'type': 'cp', 'F': 64, 'size':3, 'stride': 1, 'pad': 1, 'h': 2, 'w': 2, 'pool_stride': 2},
+    #                 {'type': 'sbn'},
+    #                 {'type': 'cp', 'F': 128, 'size':3, 'stride': 1, 'pad': 1, 'h': 2, 'w': 2, 'pool_stride': 2},
+    #                 {'type': 'af','D':400},
+    #                 {'type': 'bn'},
+    #                 {'type': 'af','D':100},
+    #                 {'type': 'sm','num_class':10} ]
+
     num_layers = len(meta_params)
     self.meta_params['num_layers'] = num_layers
     # for k, v in meta_params.iteritems():
@@ -174,6 +204,11 @@ class MyConvNet(object):
         hhh= (hh-layer['h'])/layer['pool_stride']+1
         www= (ww-layer['w'])/layer['pool_stride']+1
         prev_dim=(layer['F'], hhh, www)
+      elif(layer['type']=='pl'):
+        self.meta_params['pool_param'+str(i)] = {'pool_height': layer['h'], 'pool_width': layer['w'], 'stride': layer['stride']}
+        hhh= (prev_dim[1]-layer['h'])/layer['stride']+1
+        www= (prev_dim[2]-layer['w'])/layer['stride']+1
+        prev_dim=(prev_dim[0], hhh, www)
       elif(layer['type']=='bn' or layer['type']=='sbn'):
         self.params['gamma'+str(i)]=np.ones(prev_dim[0])
         self.params['beta'+str(i)]=np.ones(prev_dim[0])
@@ -213,6 +248,8 @@ class MyConvNet(object):
     for i in range(1,self.meta_params['num_layers']+1):
       if(self.meta_params['layer'+str(i)] == 'cv'):
         out,mids['cache'+str(i)] = conv_relu_forward(out,self.params['W'+str(i)],self.params['b'+str(i)],self.meta_params['conv_param'+str(i)])
+      if(self.meta_params['layer'+str(i)] == 'pl'):
+        out,mids['cache'+str(i)] = max_pool_forward_fast(out,self.meta_params['pool_param'+str(i)])
       elif(self.meta_params['layer'+str(i)] == 'cp'):
         out,mids['cache'+str(i)] = conv_relu_pool_forward(out,self.params['W'+str(i)],self.params['b'+str(i)],self.meta_params['conv_param'+str(i)],self.meta_params['pool_param'+str(i)])
       elif(self.meta_params['layer'+str(i)] == 'sbn'):
@@ -233,12 +270,14 @@ class MyConvNet(object):
 
     # add l2 regularization
     for i in range(1,self.meta_params['num_layers']+1):
-      if(self.meta_params['layer'+str(i)] != 'bn' and self.meta_params['layer'+str(i)] != 'sbn'):
+      if(not self.meta_params['layer'+str(i)] in ['bn', 'sbn', 'pl']):
         loss += 0.5*self.reg*np.sum(self.params['W'+str(i)]*self.params['W'+str(i)])
 
     for i in range(self.meta_params['num_layers'],0,-1):
       if(self.meta_params['layer'+str(i)] == 'cv'):
         dout,grads['W'+str(i)],grads['b'+str(i)]=conv_relu_backward(dout,mids['cache'+str(i)])
+      elif(self.meta_params['layer'+str(i)] == 'pl'):
+        dout=max_pool_backward_fast(dout,mids['cache'+str(i)])
       elif(self.meta_params['layer'+str(i)] == 'sbn'):
         dout,grads['gamma'+str(i)],grads['beta'+str(i)]=spatial_batchnorm_backward(dout,mids['cache'+str(i)])
       elif(self.meta_params['layer'+str(i)] == 'bn'):
