@@ -156,9 +156,13 @@ class MyConvNet(object):
              {'type': 'af', 'D': 100},
              {'type': 'sm', 'num_class':10} ]
 
-    # 10 / 250 , lr 1e-4, decay 0.95
+    # 49000, 10 / 250, lr 1e-4, decay 0.95
     # (Iteration 1960 / 1960) loss: 0.797972
     # (Epoch 10 / 10) train acc: 0.700000; val_acc: 0.653000
+
+    # 4000, 10 / 250, lr 1e-3, decay 0.9
+    # (Iteration 160 / 160) loss: 0.886156
+    # (Epoch 10 / 10) train acc: 0.723000; val_acc: 0.481000
 
     net2 = [ {'type': 'cv', 'F': 32, 'size':7, 'stride': 1, 'pad': 3},
              {'type': 'pl', 'h':2, 'w':2, 'stride':2},
@@ -169,7 +173,11 @@ class MyConvNet(object):
              {'type': 'af', 'D': 100},
              {'type': 'sm', 'num_class':10} ]
 
-    meta_params = net1
+    # 4000, 10 / 250, lr 1e-3, decay 0.9
+    # (Iteration 160 / 160) loss: 1.208349
+    # (Epoch 10 / 10) train acc: 0.516000; val_acc: 0.484000
+
+    meta_params = net2
 
     # meta_params = [ {'type': 'cp', 'F': 32, 'size':5, 'stride': 1, 'pad': 2, 'h': 2, 'w': 2, 'pool_stride': 2},
     #                 {'type': 'sbn'},
