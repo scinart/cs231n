@@ -1,4 +1,3 @@
-import find_mxnet
 import mxnet as mx
 import argparse
 import os, sys
