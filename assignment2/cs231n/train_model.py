@@ -70,13 +70,13 @@ def fit(args, network, data_loader, batch_end_callback=None):
     if 'local' in kv.type and (
             args.gpus is None or len(args.gpus.split(',')) is 1):
         kv = None
-
     model = mx.model.FeedForward(
+        optimizer          = "adam",
         ctx                = devs,
         symbol             = network,
         num_epoch          = args.num_epochs,
         learning_rate      = args.lr,
-        momentum           = 0.9,
+        # momentum           = 0.9,
         wd                 = 0.00001,
         initializer        = mx.init.Xavier(factor_type="in", magnitude=2.34),
         **model_args)
