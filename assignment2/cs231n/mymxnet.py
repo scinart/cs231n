@@ -1,35 +1,34 @@
-import find_mxnet
 import mxnet as mx
+import argparse
 
-def get_test(num_classes = 10, force_mirroring=False):
-    if force_mirroring:
-        attr = {'force_mirroring': 'true'}
-    else:
-        attr = {}
+def get_args(meta_args):
+    args = argparse.Namespace(
+        data_dir = '/search/speech/ouyang/opt/mxnet/example/image-classification/cifar10',
+        gpus = meta_args['gpus'],
+        num_examples=meta_args['num_train'],
+        batch_size=meta_args['batch_size'],
+        lr = meta_args['learning_rate'],
+        lr_factor = meta_args['lr_decay'],
+        lr_factor_epoch = 1,
+        num_epochs = meta_args['num_epoch'],
+        kv_store='local',
+        wd=meta_args['reg'],
+        std=meta_args['weight_scale'],
+        optimizer = meta_args['update_rule'],
+        model_prefix=meta_args['model_prefix'],
+        load_epoch=meta_args['load_epoch'],
+        save_model_prefix=meta_args['save_model_prefix']
+    )
+    return args
 
-    data = mx.symbol.Variable(name="data")
-    data = mx.symbol.Convolution(data=data, num_filter=32, kernel=(7,7), stride=(1,1), pad=(3,3))
-    data = mx.symbol.BatchNorm(data=data)
-    data = mx.symbol.Activation(data=data, act_type='relu', attr=attr)
-    data = mx.symbol.Pooling(data=data, kernel=(2, 2), stride=(2, 2), pool_type='max', attr=attr)
-    data = mx.symbol.Flatten(data=data, attr=attr)
-    data = mx.symbol.FullyConnected(data=data, num_hidden=100, name="fc1")
-    data = mx.symbol.Activation(data=data, act_type='relu', attr=attr)
-    data = mx.symbol.FullyConnected(data=data, num_hidden=num_classes, name="fc2")
-    data = mx.symbol.SoftmaxOutput(data=data, name="softmaxeeee")
-    return data
+def get_mxnet(mynet, num_classes = 10):
+    return get_mxnet_from_mynet(mynet, num_classes)
 
-def get_mxnet(num_classes = 10):
-
-    net1 = [ {'type': 'cv', 'F': 32, 'size':7, 'stride': 1, 'pad': 3},
-             {'type': 'pl', 'h':2, 'w':2, 'stride':2},
-             {'type': 'flat'},
-             {'type': 'af', 'D': 100},
-             {'type': 'sm', 'num_class':10} ]
-
-    meta_params = net1
+def get_mxnet_from_mynet(meta_params, num_classes):
+    meta_params = meta_params
     num_layers = len(meta_params)
     attr = {}
+
     data = mx.symbol.Variable(name="data")
     net = {}
     net['layer'+str(0)]=data
@@ -42,15 +41,29 @@ def get_mxnet(num_classes = 10):
                                          kernel=(layer['size'],layer['size']),
                                          stride=(layer['stride'],layer['stride']),
                                          pad=(layer['pad'], layer['pad']))
+            # bn = mx.symbol.BatchNorm(data=conv)
+            bn = conv
+            this_layer = act = mx.symbol.Activation(data = bn, act_type='relu', attr=attr)
+        elif(layer['type']=='cbv'):
+            conv = mx.symbol.Convolution(data=prev_layer,
+                                         num_filter=layer['F'],
+                                         kernel=(layer['size'],layer['size']),
+                                         stride=(layer['stride'],layer['stride']),
+                                         pad=(layer['pad'], layer['pad']))
             bn = mx.symbol.BatchNorm(data=conv)
             this_layer = act = mx.symbol.Activation(data = bn, act_type='relu', attr=attr)
         elif(layer['type']=='pl'):
-            this_layer = pool = mx.symbol.Pooling(data=prev_layer, kernel=(layer['h'], layer['w']), stride=(layer['stride'],layer['stride']), pool_type='max', attr=attr)
+            this_layer = pool = mx.symbol.Pooling(data=prev_layer, kernel=(layer['h'], layer['w']),
+                                                  stride=(layer['stride'],layer['stride']), pool_type='max', attr=attr)
         elif (layer['type']=='flat'):
             this_layer = flatten = mx.symbol.Flatten(data=prev_layer, attr=attr)
+        elif (layer['type']=='dp'):
+            this_layer = dropout = mx.symbol.Dropout(data=prev_layer,p=layer['p'], attr=attr)
         elif (layer['type']=='af'):
             fc = mx.symbol.FullyConnected(data=prev_layer, num_hidden=layer['D'])
             this_layer = fc1relu = mx.symbol.Activation(data = fc, act_type='relu', attr=attr)
+        elif (layer['type']=='sbn'):
+            this_layer = bn = mx.symbol.BatchNorm(data=prev_layer)
         elif (layer['type']=='sm'):
             fc = mx.symbol.FullyConnected(data=prev_layer, num_hidden=num_classes)
             this_layer = softmax = mx.symbol.SoftmaxOutput(data=fc, name="softmax")

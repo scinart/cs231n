@@ -70,6 +70,9 @@ def fit(args, network, data_loader, batch_end_callback=None):
     if 'local' in kv.type and (
             args.gpus is None or len(args.gpus.split(',')) is 1):
         kv = None
+
+    initializer = mx.init.Uniform(0.001)
+    # initializer        = mx.init.Xavier(factor_type="in", magnitude=2.34),
     model = mx.model.FeedForward(
         optimizer          = "adam",
         ctx                = devs,
@@ -77,14 +80,14 @@ def fit(args, network, data_loader, batch_end_callback=None):
         num_epoch          = args.num_epochs,
         learning_rate      = args.lr,
         # momentum           = 0.9,
-        wd                 = 0.00001,
-        initializer        = mx.init.Xavier(factor_type="in", magnitude=2.34),
+        wd                 = args.wd,
+        initializer        = initializer,
         **model_args)
 
     eval_metrics = ['accuracy']
-    ## TopKAccuracy only allows top_k > 1
-    for top_k in [5, 10, 20]:
-        eval_metrics.append(mx.metric.create('top_k_accuracy', top_k = top_k))
+    # ## TopKAccuracy only allows top_k > 1
+    # for top_k in [5, 10, 20]:
+    #     eval_metrics.append(mx.metric.create('top_k_accuracy', top_k = top_k))
 
     if batch_end_callback is not None:
         if not isinstance(batch_end_callback, list):
