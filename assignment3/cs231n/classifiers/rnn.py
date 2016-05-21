@@ -135,7 +135,54 @@ class CaptioningRNN(object):
     # defined above to store loss and gradients; grads[k] should give the      #
     # gradients for self.params[k].                                            #
     ############################################################################
-    pass
+    N,D=features.shape
+    N,T=captions.shape
+    V,W=W_embed.shape
+
+    # captions_expanded = np.zeros([N,T,W])
+    # for n in range(N):
+    #   for t in range(T):
+    #     captions_expanded[n,t,:]=W_embed[captions[n,t],:]
+
+    # captions_in_expanded = captions_expanded[:, :-1, :]
+    # captions_out_expanded = captions_expanded[:, 1:, :]
+
+    captions_in_expanded, cache_in_embed = word_embedding_forward(captions_in, W_embed)
+    captions_out_expanded, cache_out_embed = word_embedding_forward(captions_out, W_embed)
+
+    initial_hidden_state = features.dot(W_proj)+b_proj
+
+    h,cache_rnn = rnn_forward(captions_in_expanded, initial_hidden_state, Wx, Wh, b)
+
+    out_seq, cache_affine = temporal_affine_forward(h, W_vocab, b_vocab)
+    loss, dout = temporal_softmax_loss(out_seq, captions_out, mask, verbose=False)
+
+    dh, dW_vocab, db_vocab = temporal_affine_backward(dout,cache_affine)
+    dx, dh0, dWx, dWh, db = rnn_backward(dh,cache_rnn)
+
+    db_proj = np.sum(dh0,0)
+    dW_proj = features.reshape(features.shape[0], -1).T.dot(dh0)
+
+    dW_embed = word_embedding_backward(dx, cache_in_embed)
+
+    # self.params['W_proj']
+    # self.params['b_proj']
+    # self.params['W_embed']
+    # self.params['Wx']
+    # self.params['Wh']
+    # self.params['b']
+    # self.params['W_vocab']
+    # self.params['b_vocab']
+
+    grads['W_proj'] = dW_proj
+    grads['b_proj'] = db_proj
+    grads['W_embed'] = dW_embed
+    grads['Wx'] = dWx
+    grads['Wh'] = dWh
+    grads['b'] = db
+    grads['W_vocab'] = dW_vocab
+    grads['b_vocab'] = db_vocab
+
     ############################################################################
     #                             END OF YOUR CODE                             #
     ############################################################################
@@ -197,7 +244,19 @@ class CaptioningRNN(object):
     # functions; you'll need to call rnn_step_forward or lstm_step_forward in #
     # a loop.                                                                 #
     ###########################################################################
-    pass
+    x = W_embed[self._start,:]
+    prev_h = features.dot(W_proj)+b_proj
+    idx = 0
+    while idx < max_length:
+      next_h = rnn_step_forward(x, prev_h, Wx, Wh, b)[0]
+      prev_h = next_h
+      out = next_h.dot(W_vocab)+b_vocab
+
+      probs = np.exp(out - np.max(out, axis=1, keepdims=True))
+      probs /= np.sum(probs, axis=1, keepdims=True)
+
+      captions[:,idx] = np.argmax(probs,1)
+      idx += 1
     ############################################################################
     #                             END OF YOUR CODE                             #
     ############################################################################
