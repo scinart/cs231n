@@ -1,5 +1,5 @@
 import numpy as np
-
+# -*- coding: utf-8 -*- 
 
 """
 This file defines layer types that are commonly used for recurrent neural
@@ -279,7 +279,24 @@ def lstm_step_forward(x, prev_h, prev_c, Wx, Wh, b):
   # TODO: Implement the forward pass for a single timestep of an LSTM.        #
   # You may want to use the numerically stable sigmoid implementation above.  #
   #############################################################################
-  pass
+
+  N,D=x.shape
+  H=Wh.shape[0]
+
+  # activation vector:
+  a = x.dot(Wx)+prev_h.dot(Wh) + b
+  # split a into four vectors
+  ai, af, ao, ag = np.hsplit(a,4)
+  # don't down how to tell ipython to interpret source code as utf-8 encoding
+  # use base64 instead
+  # aT3PgyhhaSkgZj3PgyhhZikgbz3PgyhhbykgZz10YW5oKGFnKQ==
+  # Y190PWbiipljX3t04oiSMX0raeKKmWc=
+  # aF90PW/iipl0YW5oKGNfdCk=
+  i,f,o,g = sigmoid(ai), sigmoid(af), sigmoid(ao), np.tanh(ag)
+  next_c = f*prev_c + i*g
+  next_h = o*np.tanh(next_c)
+
+  
   ##############################################################################
   #                               END OF YOUR CODE                             #
   ##############################################################################
