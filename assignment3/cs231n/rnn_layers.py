@@ -142,24 +142,21 @@ def rnn_backward(dh, cache):
   # defined above.                                                             #
   ##############################################################################
   N,T,H=dh.shape
+  D=cache['0'][0].shape[1]
+
+  dh0=np.zeros([N,H])
+  dWx=np.zeros([D,H])
+  dWh=np.zeros([H,H])
+  db=np.zeros(H)
   dhmid=np.zeros([N,H])
+
   for i in range(T):
     dxmid,dhmid,dWxinc,dWhinc,dbinc=rnn_step_backward(dh[:,(T-i-1),:].reshape(N,H)+dhmid, cache[str(T-i-1)])
-    if dWx is None:
-      dWx=dWxinc
-    else:
-      dWx+=dWxinc
-
-    if dWh is None:
-      dWh=dWhinc
-    else:
-      dWh+=dWhinc
-
-    if db is None:
-      db=dbinc
-    else:
-      db+=dbinc
-
+ 
+    dWx+=dWxinc
+    dWh+=dWhinc
+    db+=dbinc
+ 
     if dx is None:
       D=dxmid.shape[1]
       dx=dxmid.reshape(N,1,D)
