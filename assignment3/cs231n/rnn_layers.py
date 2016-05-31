@@ -252,7 +252,10 @@ def sigmoid(x):
   top = np.ones_like(x)
   top[neg_mask] = z[neg_mask]
   return top / (1 + z)
-
+def dsigmoid(y):
+  return y*(1-y)
+def dtanh(y):
+  return 1-y*y
 
 def lstm_step_forward(x, prev_h, prev_c, Wx, Wh, b):
   """
@@ -296,7 +299,7 @@ def lstm_step_forward(x, prev_h, prev_c, Wx, Wh, b):
   next_c = f*prev_c + i*g
   next_h = o*np.tanh(next_c)
 
-  
+  cache = (x, prev_h, prev_c, next_h, next_c, Wx, Wh, b, i, f, o, g)
   ##############################################################################
   #                               END OF YOUR CODE                             #
   ##############################################################################
@@ -321,14 +324,17 @@ def lstm_step_backward(dnext_h, dnext_c, cache):
   - dWh: Gradient of hidden-to-hidden weights, of shape (H, 4H)
   - db: Gradient of biases, of shape (4H,)
   """
-  dx, dh, dc, dWx, dWh, db = None, None, None, None, None, None
+  dx, dprev_h, dprev_c, dWx, dWh, db = None, None, None, None, None, None
   #############################################################################
   # TODO: Implement the backward pass for a single timestep of an LSTM.       #
   #                                                                           #
   # HINT: For sigmoid and tanh you can compute local derivatives in terms of  #
   # the output value from the nonlinearity.                                   #
   #############################################################################
-  pass
+  x, prev_h, prev_c, next_h, next_c, Wx, Wh, b, i, f, o, g = cache
+  dprev_c = dnext_c * f
+  dprev_c += dnext_h * o * dtanh(np.tanh(next_c)) * f
+
   ##############################################################################
   #                               END OF YOUR CODE                             #
   ##############################################################################
