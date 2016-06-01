@@ -341,6 +341,49 @@ def lstm_step_backward(dnext_h, dnext_c, cache):
 
   return dx, dprev_h, dprev_c, dWx, dWh, db
 
+def my_lstm_step_backward(dnext_h_part, dnext_c_part, cache):
+  """
+  Backward pass for a single timestep of an LSTM.
+  
+  Inputs:
+  - dnext_h_part: der c_t+1/der h_t, upper lever added from lstm_backward.
+  - dnext_c_part: der c_t+1/der c_t
+  - cache: Values from the forward pass
+  
+  Returns a tuple of:
+  - dx: Gradient of input data, of shape (N, D)
+  - dprev_c: Gradient of previous cell state, of shape (N, H)
+  - dWx: Gradient of input-to-hidden weights, of shape (D, 4H)
+  - dWh: Gradient of hidden-to-hidden weights, of shape (H, 4H)
+  - db: Gradient of biases, of shape (4H,)
+  """
+
+  # forward pass
+  # a = x.dot(Wx)+prev_h.dot(Wh) + b
+  # ai, af, ao, ag = np.hsplit(a,4)
+  # i,f,o,g = sigmoid(ai), sigmoid(af), sigmoid(ao), np.tanh(ag)
+  # next_c = f*prev_c + i*g
+  # next_h = o*np.tanh(next_c)
+
+  x, prev_h, prev_c, next_h, next_c, Wx, Wh, b, i, f, o, g = cache
+
+  dnext_c = dnext_c_part
+  # comment this for gradient descent check.
+  # dnext_c += dnext_h_part * o * dtanh(tanh(next_c))
+  dprev_c_part, df = dnext_c * f, dnext_c * prev_c
+  di, dg = dnext_c*g, dnext_c*i
+  do = dnext_h_part * np.tanh(next_c)
+
+  dai, daf, dao, dag = di*dsigmoid(i), df*dsigmoid(f), do*dsigmoid(o), dg*dtanh(g)
+  da = np.hstack((dai,daf,dao,dag))
+
+  Whi, Whf, Who, Whg = np.hsplit(Wh,4)
+
+  dx, dWx = da.dot(Wx.T), x.T.dot(da)
+  dprev_h_part, dWh = da.dot(Wh.T), prev_h.T.dot(da)
+  db = np.sum(da,0)
+
+  return dx, dprev_h_part, dprev_c_part, dWx, dWh, db
 
 def lstm_forward(x, h0, Wx, Wh, b):
   """
